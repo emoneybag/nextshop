@@ -21,24 +21,8 @@ export default function CheckoutPage(){
   const [email,setEmail] = useState("");
 
 
-
-  function handleSubmit(e: React.FormEvent){
-
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-
-    console.log({
-      name,
-      email,
-      cart
-    });
-
-
-    router.push("/success");
-
-  }
-
-  function handleCheckout() {
 
     if (!user) {
       alert("Please register first");
@@ -46,9 +30,7 @@ export default function CheckoutPage(){
     }
 
     const total = cart.reduce(
-      (sum, item) =>
-        sum +
-        item.product.price * item.quantity,
+      (sum, item) => sum + item.product.price * item.quantity,
       0
     );
 
@@ -64,7 +46,6 @@ export default function CheckoutPage(){
 
     router.push("/success");
   }
-
 
 
   return (
@@ -100,8 +81,8 @@ export default function CheckoutPage(){
 
 
         <button
+          type="submit"
           className="bg-black text-white px-5 py-3 rounded"
-          onClick={handleCheckout}
         >
           Place Order
         </button>
