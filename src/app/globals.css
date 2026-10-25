@@ -1,26 +1,139 @@
 @import "tailwindcss";
 
+/* ───────── Design tokens ───────── */
+/*
+ * Neutral monochrome palettes with a full-page gradient. Default follows the
+ * OS; the header toggle sets data-theme="light|dark" on <html>.
+ * Surfaces are translucent so the page gradient shows through the cards.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --bg: #0b0b0c;
+  --page-gradient: linear-gradient(160deg, #26262a 0%, #121214 42%, #050505 100%);
+  --surface: rgb(255 255 255 / 0.04);
+  --surface-2: rgb(255 255 255 / 0.08);
+  --line: rgb(255 255 255 / 0.1);
+  --ink: #f5f5f6;
+  --muted: #9a9aa0;
+  --accent: #f5f5f6;
+  --accent-ink: #0b0b0c;
+  --danger: #ff6b6b;
+  --glow-1: rgb(255 255 255 / 0.07);
+  --glow-2: rgb(255 255 255 / 0.03);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f4f4f5;
+    --page-gradient: linear-gradient(160deg, #ffffff 0%, #f0f0f2 45%, #dcdce0 100%);
+    --surface: rgb(255 255 255 / 0.72);
+    --surface-2: rgb(0 0 0 / 0.05);
+    --line: rgb(0 0 0 / 0.1);
+    --ink: #111113;
+    --muted: #66666d;
+    --accent: #111113;
+    --accent-ink: #ffffff;
+    --danger: #d64040;
+    --glow-1: rgb(0 0 0 / 0.05);
+    --glow-2: rgb(0 0 0 / 0.02);
   }
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f4f5;
+  --page-gradient: linear-gradient(160deg, #ffffff 0%, #f0f0f2 45%, #dcdce0 100%);
+  --surface: rgb(255 255 255 / 0.72);
+  --surface-2: rgb(0 0 0 / 0.05);
+  --line: rgb(0 0 0 / 0.1);
+  --ink: #111113;
+  --muted: #66666d;
+  --accent: #111113;
+  --accent-ink: #ffffff;
+  --danger: #d64040;
+  --glow-1: rgb(0 0 0 / 0.05);
+  --glow-2: rgb(0 0 0 / 0.02);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  background-image: var(--page-gradient);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ───────── Reusable pieces ───────── */
+@layer components {
+  .wrap {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .display {
+    font-family: var(--font-display), var(--font-body), sans-serif;
+    letter-spacing: -0.03em;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-accent;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 bg-accent text-accent-ink hover:brightness-110 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 border border-line text-ink hover:border-accent hover:text-accent;
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted/70 transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+  }
+}
+
+/* Subtle ambient glow used behind hero + CTA sections */
+.glow {
+  background:
+    radial-gradient(60% 50% at 20% 0%, var(--glow-1), transparent 70%),
+    radial-gradient(50% 50% at 90% 30%, var(--glow-2), transparent 70%);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .rise { animation: none; }
 }

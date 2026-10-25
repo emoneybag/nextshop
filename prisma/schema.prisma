@@ -21,4 +21,90 @@ model User {
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  orders       Order[]
+}
+
+
+model Product {
+  id             Int      @id @default(autoincrement())
+
+  name           String
+  tagline        String
+  description    String
+  /// Prices are stored in cents to avoid floating-point money bugs.
+  priceCents     Int
+  compareAtCents Int?
+  category       String
+  image          String
+  rating         Float
+  reviews        Int      @default(0)
+  badge          String?
+  features       String[]
+  /// Array of { label, value } pairs.
+  specs          Json
+  /// Soft-delete flag: inactive products are hidden but keep order history intact.
+  active         Boolean  @default(true)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orderItems     OrderItem[]
+
+  @@index([category])
+}
+
+enum OrderStatus {
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  /// Short, human-friendly reference, e.g. NS-4F9K2Q
+  reference     String      @unique
+  status        OrderStatus @default(CONFIRMED)
+
+  email         String
+  subtotalCents Int
+  shippingCents Int
+  taxCents      Int
+  totalCents    Int
+
+  shipName       String
+  shipAddress    String
+  shipCity       String
+  shipRegion     String
+  shipPostalCode String
+  shipCountry    String
+
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items         OrderItem[]
+
+  createdAt     DateTime    @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// Nullable so a product can be removed later without losing order history.
+  productId  Int?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  /// Snapshot of the product at purchase time.
+  name       String
+  image      String
+  priceCents Int
+  quantity   Int
+
+  @@index([orderId])
 }

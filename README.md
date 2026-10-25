@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextShop
 
-## Getting Started
+A demo e-commerce storefront built with **Next.js 16, React 19 and Tailwind CSS 4**. Portfolio project, no real payments.
 
-First, run the development server:
+## Features
+- Neutral dark + light themes (follows your OS, header toggle, no flash) with a monochrome gradient background; tokens in `src/app/globals.css`
+- Real authentication: NextAuth credentials sign-in/register backed by Postgres + Prisma, bcrypt-hashed passwords, JWT sessions
+- 12-product catalogue with categories, ratings, specs, sale/new badges
+- Shop page with category filter, search and sorting
+- Product detail pages (server-rendered from the database, with SEO metadata) and related products
+- Catalogue, orders and users stored in Postgres via Prisma (prices in integer cents)
+- Persistent cart (localStorage) with quantity stepper, free-shipping progress, totals
+- Sign-in-required checkout: the server re-prices every order from the database, so the client can't tamper with totals
+- Per-user order history and confirmation pages (users can only see their own orders)
+- Contact page, 404 page
 
+## Getting started
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+The app needs a Postgres database:
+```bash
+cp .env.example .env                              # fill in DATABASE_URL and NEXTAUTH_SECRET (openssl rand -base64 32)
+npx prisma migrate dev --name add_catalog_and_orders   # creates/updates the tables
+npx prisma generate
+npm run db:seed                                   # loads the 12 demo products (safe to re-run)
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Useful scripts: `npm run db:studio` (browse the data), `npm run db:seed`, `npm run check:images`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To change the catalogue, edit `src/data/products.ts` and run `npm run db:seed`. To hide a product without losing order history, set its `active` column to `false`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Images
+Products 1–3 use local photos in `public/products`. The rest use Unsplash stock photos defined in `src/data/products.ts` and `src/data/categories.ts`.
+Run `npm run check:images` to verify every remote image URL resolves.

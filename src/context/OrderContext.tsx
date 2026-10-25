@@ -1,117 +1,54 @@
 "use client";
 
-import { useEffect } from "react";
-
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
+  type ReactNode,
 } from "react";
-
 import type { Order } from "@/types/order";
+import { loadFromStorage, saveToStorage } from "@/lib/storage";
+
+const STORAGE_KEY = "nextshop:orders:v2";
 
 type OrderContextType = {
   orders: Order[];
+  hydrated: boolean;
   createOrder: (order: Order) => void;
+  getOrder: (id: string) => Order | undefined;
 };
 
-const OrderContext =
-  createContext<OrderContextType | null>(
-    null
-  );
+const OrderContext = createContext<OrderContextType | null>(null);
 
-export function OrderProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function OrderProvider({ children }: { children: ReactNode }) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
-    function createOrder(order: Order) {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrders(loadFromStorage<Order[]>(STORAGE_KEY, []));
+    setHydrated(true);
+  }, []);
 
-        setOrders(currentOrders => [
-            ...currentOrders,
-            order,
-        ]);
+  useEffect(() => {
+    if (hydrated) saveToStorage(STORAGE_KEY, orders);
+  }, [orders, hydrated]);
 
-    }
+  const createOrder = (order: Order) =>
+    setOrders((current) => [order, ...current]);
 
-    const [orders, setOrders] =
-    useState<Order[]>([]);
+  const getOrder = (id: string) => orders.find((o) => o.id === id);
 
-    const [ordersLoaded, setOrdersLoaded] =
-    useState(false);
-
-    useEffect(() => {
-
-    try {
-
-        const storedOrders =
-        localStorage.getItem("orders");
-
-        if(storedOrders){
-
-        setOrders(
-            JSON.parse(storedOrders)
-        );
-
-        }
-
-    } catch(error){
-
-        console.error(
-        "Failed to load orders:",
-        error
-        );
-
-    } finally {
-
-        setOrdersLoaded(true);
-
-    }
-
-    }, []);
-
-    useEffect(() => {
-
-    if(!ordersLoaded) return;
-
-    localStorage.setItem(
-        "orders",
-        JSON.stringify(orders)
-    );
-
-}, [orders, ordersLoaded]);
-
-    return (
-
-    <OrderContext.Provider
-    value={{
-        orders,
-        createOrder,
-    }}
-    >
-
+  return (
+    <OrderContext.Provider value={{ orders, hydrated, createOrder, getOrder }}>
       {children}
-
     </OrderContext.Provider>
-
   );
-
 }
 
-export function useOrders(){
-
-  const context =
-    useContext(OrderContext);
-
-  if(!context){
-
-    throw new Error(
-      "useOrders must be used inside OrderProvider"
-    );
-
-  }
-
+export function useOrders() {
+  const context = useContext(OrderContext);
+  if (!context) throw new Error("useOrders must be used inside OrderProvider");
   return context;
-
 }

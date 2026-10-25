@@ -1,21 +1,52 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Check, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { Product } from "@/types/product";
 
+type Props = {
+  product: Product;
+  quantity?: number;
+  compact?: boolean;
+  className?: string;
+};
+
 export default function AddToCartButton({
   product,
-}: {
-  product: Product;
-}) {
+  quantity = 1,
+  compact = false,
+  className = "",
+}: Props) {
   const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    if (!added) return;
+    const t = setTimeout(() => setAdded(false), 1600);
+    return () => clearTimeout(t);
+  }, [added]);
 
   return (
     <button
-      onClick={() => addToCart(product)}
-      className="mt-6 bg-black text-white px-5 py-3 rounded"
+      type="button"
+      onClick={() => {
+        addToCart(product, quantity);
+        setAdded(true);
+      }}
+      className={`btn-primary ${compact ? "shrink-0 !px-4 !py-2.5" : "w-full"} ${className}`}
+      aria-live="polite"
     >
-      Add To Cart
+      {added ? (
+        <>
+          <Check className="size-4" aria-hidden /> Added
+        </>
+      ) : (
+        <>
+          <ShoppingBag className="size-4" aria-hidden />
+          {compact ? "Add" : "Add to cart"}
+        </>
+      )}
     </button>
   );
 }

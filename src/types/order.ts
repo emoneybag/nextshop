@@ -1,14 +1,36 @@
-import type { Product } from "./product";
+export type OrderStatus = "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 
 export type OrderItem = {
-  product: Product;
+  id: string;
+  productId: number | null;
+  name: string;
+  image: string;
+  /** Unit price in dollars at the time of purchase. */
+  price: number;
   quantity: number;
+};
+
+export type ShippingAddress = {
+  fullName: string;
+  address: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
 };
 
 export type Order = {
   id: string;
-  date: string;
-  items: OrderItem[];
+  /** Short, human-friendly reference, e.g. NS-4F9K2Q */
+  reference: string;
+  status: OrderStatus;
+  /** ISO date string. */
+  createdAt: string;
+  email: string;
+  subtotal: number;
+  shipping: number;
+  tax: number;
   total: number;
-  customerEmail: string;
+  shippingAddress: ShippingAddress;
+  items: OrderItem[];
 };
