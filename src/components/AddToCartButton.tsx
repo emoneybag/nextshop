@@ -18,7 +18,7 @@ export default function AddToCartButton({
   compact = false,
   className = "",
 }: Props) {
-  const { addToCart } = useCart();
+  const { addToCart, openCart } = useCart();
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function AddToCartButton({
       onClick={() => {
         addToCart(product, quantity);
         setAdded(true);
+        openCart();
       }}
       className={`btn-primary ${compact ? "shrink-0 !px-4 !py-2.5" : "w-full"} ${className}`}
       aria-live="polite"

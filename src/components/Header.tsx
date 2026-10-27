@@ -17,9 +17,24 @@ const links = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { count, hydrated } = useCart();
+  const { count, hydrated, openCart } = useCart();
   const { user } = useUser();
   const [open, setOpen] = useState(false);
+
+  // On the cart/checkout pages the drawer would just duplicate the page.
+  const cartIsPage = pathname === "/cart" || pathname === "/checkout";
+  const cartLabel = `Cart${hydrated && count ? `, ${count} items` : ""}`;
+  const cartClass = "relative grid size-10 place-items-center rounded-full transition hover:bg-surface-2";
+  const cartInner = (
+    <>
+      <ShoppingBag className="size-5" />
+      {hydrated && count > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-5 text-accent-ink">
+          {count}
+        </span>
+      )}
+    </>
+  );
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -65,18 +80,13 @@ export default function Header() {
 
           <ThemeToggle />
 
-          <Link
-            href="/cart"
-            className="relative grid size-10 place-items-center rounded-full transition hover:bg-surface-2"
-            aria-label={`Cart${hydrated && count ? `, ${count} items` : ""}`}
-          >
-            <ShoppingBag className="size-5" />
-            {hydrated && count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-5 text-accent-ink">
-                {count}
-              </span>
-            )}
-          </Link>
+          {cartIsPage ? (
+            <Link href="/cart" className={cartClass} aria-label={cartLabel}>{cartInner}</Link>
+          ) : (
+            <button type="button" onClick={openCart} className={cartClass} aria-label={cartLabel} aria-haspopup="dialog">
+              {cartInner}
+            </button>
+          )}
 
           <button
             type="button"

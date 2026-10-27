@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Geist } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CartDrawer from "@/components/CartDrawer";
 import { CartProvider } from "@/context/CartContext";
 import { UserProvider } from "@/context/UserContext";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
             <Header />
             <div className="flex-1">{children}</div>
             <Footer />
+            <CartDrawer />
           </UserProvider>
         </CartProvider>
       </body>

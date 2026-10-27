@@ -44,7 +44,7 @@ function toOrder(row: OrderRow): Order {
 export async function getOrdersForUser(userId: string): Promise<Order[]> {
   await connection();
   const rows = await prisma.order.findMany({
-    where: { userId },
+    where: { userId, status: { not: "PENDING" } },
     include: orderInclude,
     orderBy: { createdAt: "desc" },
   });
@@ -63,7 +63,7 @@ export async function getOrderForUser(id: string, userId: string): Promise<Order
 
 export async function countOrdersForUser(userId: string): Promise<number> {
   await connection();
-  return prisma.order.count({ where: { userId } });
+  return prisma.order.count({ where: { userId, status: { not: "PENDING" } } });
 }
 
 // No 0/O/1/I so references are easy to read out over the phone.
@@ -73,9 +73,20 @@ const makeReference = () =>
 
 export class OrderError extends Error {}
 
+/** Unpaid orders a user may have open at once; stops accidental or abusive floods. */
+const MAX_RECENT_PENDING = 10;
+
+export async function hasTooManyPendingOrders(userId: string): Promise<boolean> {
+  const count = await prisma.order.count({
+    where: { userId, status: "PENDING", createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) } },
+  });
+  return count >= MAX_RECENT_PENDING;
+}
+
 /**
- * Creates an order. Prices are always read from the database, never from the
- * client, so the cart can't be tampered with.
+ * Creates an unpaid (PENDING) order. Prices are always read from the database,
+ * never from the client, so the cart can't be tampered with. The order becomes
+ * CONFIRMED only when Stripe reports the payment as complete.
  */
 export async function createOrder(userId: string, input: OrderInput) {
   // Merge duplicate lines so one product appears once.
@@ -103,6 +114,7 @@ export async function createOrder(userId: string, input: OrderInput) {
       return await prisma.order.create({
         data: {
           reference: makeReference(),
+          status: "PENDING",
           userId,
           email: input.email.toLowerCase(),
           subtotalCents: toCents(totals.subtotal),
@@ -125,7 +137,16 @@ export async function createOrder(userId: string, input: OrderInput) {
             })),
           },
         },
-        select: { id: true, reference: true, totalCents: true },
+        select: {
+          id: true,
+          reference: true,
+          email: true,
+          subtotalCents: true,
+          shippingCents: true,
+          taxCents: true,
+          totalCents: true,
+          items: { select: { name: true, image: true, priceCents: true, quantity: true } },
+        },
       });
     } catch (error) {
       // Reference collision: pick a new one and retry.

@@ -55,6 +55,8 @@ model Product {
 }
 
 enum OrderStatus {
+  /// Created at checkout, waiting for Stripe to confirm payment.
+  PENDING
   CONFIRMED
   SHIPPED
   DELIVERED
@@ -65,7 +67,8 @@ model Order {
   id            String      @id @default(cuid())
   /// Short, human-friendly reference, e.g. NS-4F9K2Q
   reference     String      @unique
-  status        OrderStatus @default(CONFIRMED)
+  /// No default on purpose: code must choose PENDING (unpaid) or CONFIRMED (paid).
+  status        OrderStatus
 
   email         String
   subtotalCents Int
@@ -79,6 +82,10 @@ model Order {
   shipRegion     String
   shipPostalCode String
   shipCountry    String
+
+  stripeSessionId       String?  @unique
+  stripePaymentIntentId String?
+  paidAt                DateTime?
 
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)

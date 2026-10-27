@@ -10,7 +10,7 @@ import OrderItemsList from "@/components/OrderItemsList";
 
 export const metadata: Metadata = { title: "Your orders" };
 
-const statusLabel = { CONFIRMED: "Confirmed", SHIPPED: "Shipped", DELIVERED: "Delivered", CANCELLED: "Cancelled" } as const;
+const statusLabel = { PENDING: "Awaiting payment", CONFIRMED: "Confirmed", SHIPPED: "Shipped", DELIVERED: "Delivered", CANCELLED: "Cancelled" } as const;
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);

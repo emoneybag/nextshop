@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -29,6 +30,10 @@ type CartContextType = {
   subtotal: number;
   /** False until localStorage has been read (avoids an "empty cart" flash). */
   hydrated: boolean;
+  /** Cart drawer visibility. */
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
   addToCart: (product: Product, quantity?: number) => void;
   decreaseQuantity: (id: number) => void;
   setQuantity: (id: number, quantity: number) => void;
@@ -54,6 +59,9 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setLines] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     // Reading localStorage has to happen after mount to match server HTML.
@@ -120,6 +128,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         count,
         subtotal,
         hydrated,
+        isOpen,
+        openCart,
+        closeCart,
         addToCart,
         decreaseQuantity,
         setQuantity,
