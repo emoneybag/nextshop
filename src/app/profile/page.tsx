@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { Package } from "lucide-react";
+import { Heart, Package, Shield } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { countOrdersForUser } from "@/server/orders";
 import SignOutButton from "@/components/SignOutButton";
@@ -37,6 +37,23 @@ export default async function ProfilePage() {
           <p className="text-sm text-muted">{orderCount} {orderCount === 1 ? "order" : "orders"} placed</p>
         </div>
       </Link>
+      <Link href="/wishlist" className="card mt-4 flex items-center gap-4 p-6 transition hover:border-accent/50">
+        <span className="grid size-11 place-items-center rounded-full bg-surface-2"><Heart className="size-5" /></span>
+        <div>
+          <p className="font-semibold">Wishlist</p>
+          <p className="text-sm text-muted">Items you saved for later</p>
+        </div>
+      </Link>
+
+      {session.user.role === "ADMIN" && (
+        <Link href="/admin" className="card mt-4 flex items-center gap-4 p-6 transition hover:border-accent/50">
+          <span className="grid size-11 place-items-center rounded-full bg-surface-2"><Shield className="size-5" /></span>
+          <div>
+            <p className="font-semibold">Admin dashboard</p>
+            <p className="text-sm text-muted">Orders, products and discount codes</p>
+          </div>
+        </Link>
+      )}
     </main>
   );
 }

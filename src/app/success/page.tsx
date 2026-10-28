@@ -63,6 +63,9 @@ export default async function SuccessPage({ searchParams }: Props) {
         <dl className="mt-8 divide-y divide-line rounded-xl border border-line text-left text-sm">
           <div className="flex justify-between px-4 py-3"><dt className="text-muted">Reference</dt><dd className="font-mono">{order.reference}</dd></div>
           <div className="flex justify-between px-4 py-3"><dt className="text-muted">Items</dt><dd>{units}</dd></div>
+          {order.discount > 0 && (
+            <div className="flex justify-between px-4 py-3"><dt className="text-muted">Discount{order.discountCode ? ` (${order.discountCode})` : ""}</dt><dd>−{formatPrice(order.discount)}</dd></div>
+          )}
           <div className="flex justify-between px-4 py-3"><dt className="text-muted">Total</dt><dd className="font-semibold">{formatPrice(order.total)}</dd></div>
           <div className="flex justify-between gap-4 px-4 py-3"><dt className="text-muted">Receipt sent to</dt><dd className="truncate">{order.email}</dd></div>
         </dl>

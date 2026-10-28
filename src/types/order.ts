@@ -28,6 +28,8 @@ export type Order = {
   createdAt: string;
   email: string;
   subtotal: number;
+  discount: number;
+  discountCode: string | null;
   shipping: number;
   tax: number;
   total: number;

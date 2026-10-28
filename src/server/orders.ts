@@ -7,6 +7,7 @@ import { calculateTotals } from "@/lib/pricing";
 import type { OrderInput } from "@/lib/validators/order";
 import type { Order } from "@/types/order";
 import type { Prisma } from "@/generated/prisma/client";
+import { DiscountError, resolveDiscount } from "@/server/discounts";
 
 const orderInclude = { items: { orderBy: { id: "asc" } } } satisfies Prisma.OrderInclude;
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
@@ -19,6 +20,8 @@ function toOrder(row: OrderRow): Order {
     createdAt: row.createdAt.toISOString(),
     email: row.email,
     subtotal: row.subtotalCents / 100,
+    discount: row.discountCents / 100,
+    discountCode: row.discountCode,
     shipping: row.shippingCents / 100,
     tax: row.taxCents / 100,
     total: row.totalCents / 100,
@@ -83,15 +86,12 @@ export async function hasTooManyPendingOrders(userId: string): Promise<boolean> 
   return count >= MAX_RECENT_PENDING;
 }
 
-/**
- * Creates an unpaid (PENDING) order. Prices are always read from the database,
- * never from the client, so the cart can't be tampered with. The order becomes
- * CONFIRMED only when Stripe reports the payment as complete.
- */
-export async function createOrder(userId: string, input: OrderInput) {
-  // Merge duplicate lines so one product appears once.
+type Line = { productId: number; quantity: number };
+
+/** Merges duplicate lines and prices them from the database (never from the client). */
+export async function priceLines(lines: Line[]) {
   const wanted = new Map<number, number>();
-  for (const { productId, quantity } of input.items) {
+  for (const { productId, quantity } of lines) {
     wanted.set(productId, Math.min(10, (wanted.get(productId) ?? 0) + quantity));
   }
 
@@ -102,11 +102,27 @@ export async function createOrder(userId: string, input: OrderInput) {
     throw new OrderError("Some items in your cart are no longer available.");
   }
 
-  const subtotalCents = products.reduce(
-    (sum, p) => sum + p.priceCents * (wanted.get(p.id) ?? 0),
-    0,
-  );
-  const totals = calculateTotals(subtotalCents / 100);
+  const subtotalCents = products.reduce((sum, p) => sum + p.priceCents * (wanted.get(p.id) ?? 0), 0);
+  return { products, wanted, subtotalCents };
+}
+
+/**
+ * Creates an unpaid (PENDING) order. Prices and discounts are always worked
+ * out on the server, so the cart can't be tampered with. The order becomes
+ * CONFIRMED only when Stripe reports the payment as complete.
+ */
+export async function createOrder(userId: string, input: OrderInput) {
+  const { products, wanted, subtotalCents } = await priceLines(input.items);
+
+  let discountCents = 0;
+  let discountCode: string | null = null;
+  if (input.discountCode) {
+    const applied = await resolveDiscount(input.discountCode, subtotalCents); // throws DiscountError
+    discountCents = applied.discountCents;
+    discountCode = applied.code;
+  }
+
+  const totals = calculateTotals(subtotalCents / 100, discountCents / 100);
   const toCents = (n: number) => Math.round(n * 100);
 
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -118,6 +134,8 @@ export async function createOrder(userId: string, input: OrderInput) {
           userId,
           email: input.email.toLowerCase(),
           subtotalCents: toCents(totals.subtotal),
+          discountCode,
+          discountCents: toCents(totals.discount),
           shippingCents: toCents(totals.shipping),
           taxCents: toCents(totals.tax),
           totalCents: toCents(totals.total),
@@ -142,6 +160,8 @@ export async function createOrder(userId: string, input: OrderInput) {
           reference: true,
           email: true,
           subtotalCents: true,
+          discountCents: true,
+          discountCode: true,
           shippingCents: true,
           taxCents: true,
           totalCents: true,
@@ -156,3 +176,5 @@ export async function createOrder(userId: string, input: OrderInput) {
   }
   throw new Error("Could not generate a unique order reference");
 }
+
+export { DiscountError };

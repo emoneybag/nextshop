@@ -7,6 +7,9 @@ export function TotalsTable({ totals }: { totals: Totals }) {
   return (
     <dl className="space-y-3">
       <div className={row}><dt className="text-muted">Subtotal</dt><dd>{formatPrice(totals.subtotal)}</dd></div>
+      {totals.discount > 0 && (
+        <div className={row}><dt className="text-muted">Discount</dt><dd className="text-accent">−{formatPrice(totals.discount)}</dd></div>
+      )}
       <div className={row}>
         <dt className="text-muted">Shipping</dt>
         <dd>{totals.shipping === 0 ? <span className="text-accent">Free</span> : formatPrice(totals.shipping)}</dd>

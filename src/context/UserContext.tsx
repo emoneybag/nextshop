@@ -13,7 +13,7 @@ export function useUser() {
   const { data, status } = useSession();
 
   const user: User | null = data?.user
-    ? { id: data.user.id, name: data.user.name ?? "", email: data.user.email ?? "" }
+    ? { id: data.user.id, name: data.user.name ?? "", email: data.user.email ?? "", role: data.user.role ?? "USER" }
     : null;
 
   return {

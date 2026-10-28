@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, ShoppingBag, User as UserIcon, X } from "lucide-react";
+import { Heart, Menu, ShoppingBag, User as UserIcon, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import ThemeToggle from "./ThemeToggle";
+import { useWishlist } from "@/context/WishlistContext";
 
-const links = [
+const baseLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop" },
   { href: "/orders", label: "Orders" },
@@ -19,7 +20,13 @@ export default function Header() {
   const pathname = usePathname();
   const { count, hydrated, openCart } = useCart();
   const { user } = useUser();
+  const wishlist = useWishlist();
   const [open, setOpen] = useState(false);
+  const links = [
+    ...baseLinks,
+    { href: "/wishlist", label: "Wishlist" },
+    ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
 
   // On the cart/checkout pages the drawer would just duplicate the page.
   const cartIsPage = pathname === "/cart" || pathname === "/checkout";
@@ -76,6 +83,15 @@ export default function Header() {
           >
             <UserIcon className="size-5" />
             <span className="hidden sm:inline">{user ? user.name.split(" ")[0] : "Sign in"}</span>
+          </Link>
+
+          <Link
+            href="/wishlist"
+            className="relative hidden size-10 place-items-center rounded-full transition hover:bg-surface-2 sm:grid"
+            aria-label={`Wishlist${wishlist.count ? `, ${wishlist.count} items` : ""}`}
+          >
+            <Heart className="size-5" />
+            {wishlist.count > 0 && <span className="absolute right-1 top-1 size-2 rounded-full bg-danger" />}
           </Link>
 
           <ThemeToggle />

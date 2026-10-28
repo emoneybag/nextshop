@@ -34,7 +34,20 @@ async function main() {
     `SELECT setval(pg_get_serial_sequence('"Product"', 'id'), (SELECT MAX(id) FROM "Product"))`,
   );
 
-  console.log(`Seeded ${seedProducts.length} products`);
+  // Starter discount codes (re-running never resets how many times they were used).
+  const codes = [
+    { code: "WELCOME10", type: "PERCENT" as const, value: 10, minSubtotalCents: 0 },
+    { code: "SAVE20", type: "FIXED" as const, value: 2000, minSubtotalCents: 10000 },
+  ];
+  for (const c of codes) {
+    await prisma.discountCode.upsert({
+      where: { code: c.code },
+      create: c,
+      update: { type: c.type, value: c.value, minSubtotalCents: c.minSubtotalCents },
+    });
+  }
+
+  console.log(`Seeded ${seedProducts.length} products and ${codes.length} discount codes`);
 }
 
 main()

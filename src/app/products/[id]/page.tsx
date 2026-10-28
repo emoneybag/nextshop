@@ -7,7 +7,12 @@ import ProductCard from "@/components/ProductCard";
 import PurchasePanel from "@/components/PurchasePanel";
 import Stars from "@/components/Stars";
 import Price from "@/components/Price";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getProduct, getRelatedProducts } from "@/server/products";
+import { getReviews } from "@/server/reviews";
+import ReviewsSection from "@/components/ReviewsSection";
+import WishlistButton from "@/components/WishlistButton";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -23,7 +28,11 @@ export default async function ProductDetailPage({ params }: Props) {
   const product = await getProduct(Number(id));
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product);
+  const [related, reviews, session] = await Promise.all([
+    getRelatedProducts(product),
+    getReviews(product.id),
+    getServerSession(authOptions),
+  ]);
 
   return (
     <main className="wrap py-10">
@@ -61,6 +70,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </ul>
 
           <PurchasePanel product={product} />
+          <div className="mt-4"><WishlistButton productId={product.id} productName={product.name} variant="labelled" /></div>
 
           <div className="mt-8 grid gap-3 border-t border-line pt-6 text-sm text-muted sm:grid-cols-3">
             <span className="flex items-center gap-2"><Truck className="size-4 text-accent" /> Free over $100</span>
@@ -81,6 +91,8 @@ export default async function ProductDetailPage({ params }: Props) {
           ))}
         </dl>
       </section>
+
+      <ReviewsSection product={product} reviews={reviews} userId={session?.user?.id} />
 
       <section className="mt-16">
         <h2 className="display text-2xl font-bold">You might also like</h2>

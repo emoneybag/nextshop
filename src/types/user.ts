@@ -3,4 +3,5 @@ export type User = {
   /** Display name (the account's username). */
   name: string;
   email: string;
+  role: "USER" | "ADMIN";
 };

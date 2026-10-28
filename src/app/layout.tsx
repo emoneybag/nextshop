@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { CartProvider } from "@/context/CartContext";
 import { UserProvider } from "@/context/UserContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 const body = Geist({ variable: "--font-body", subsets: ["latin"] });
 const display = Bricolage_Grotesque({
@@ -43,10 +44,12 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <CartProvider>
           <UserProvider>
-            <Header />
-            <div className="flex-1">{children}</div>
-            <Footer />
-            <CartDrawer />
+            <WishlistProvider>
+              <Header />
+              <div className="flex-1">{children}</div>
+              <Footer />
+              <CartDrawer />
+            </WishlistProvider>
           </UserProvider>
         </CartProvider>
       </body>

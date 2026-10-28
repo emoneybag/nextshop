@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStripe, StripeNotConfiguredError } from "@/lib/stripe";
 import { orderSchema } from "@/lib/validators/order";
-import { createOrder, hasTooManyPendingOrders, OrderError } from "@/server/orders";
+import { createOrder, DiscountError, hasTooManyPendingOrders, OrderError } from "@/server/orders";
 import { createCheckoutSession } from "@/server/payments";
 import { prisma } from "@/server/db";
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   try {
     order = await createOrder(userId, parsed.data);
   } catch (error) {
-    if (error instanceof OrderError) {
+    if (error instanceof OrderError || error instanceof DiscountError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
     // A deleted account still holding a valid JWT hits the user foreign key.

@@ -12,6 +12,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(cuid())
 
@@ -22,7 +27,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  role         UserRole @default(USER)
+
   orders       Order[]
+  wishlist     WishlistItem[]
+  reviews      Review[]
 }
 
 
@@ -50,6 +59,8 @@ model Product {
   updatedAt      DateTime @updatedAt
 
   orderItems     OrderItem[]
+  wishlistItems  WishlistItem[]
+  userReviews    Review[]
 
   @@index([category])
 }
@@ -75,6 +86,9 @@ model Order {
   shippingCents Int
   taxCents      Int
   totalCents    Int
+  /// Snapshot of the discount applied at checkout (code kept even if the code is later deleted).
+  discountCode  String?
+  discountCents Int         @default(0)
 
   shipName       String
   shipAddress    String
@@ -114,4 +128,55 @@ model OrderItem {
   quantity   Int
 
   @@index([orderId])
+}
+
+
+model WishlistItem {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 1–5
+  rating    Int
+  title     String
+  body      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One review per customer per product (re-submitting edits it).
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model DiscountCode {
+  id               String       @id @default(cuid())
+  /// Always stored upper-case.
+  code             String       @unique
+  type             DiscountType
+  /// Percent (1–100) for PERCENT, cents for FIXED.
+  value            Int
+  minSubtotalCents Int          @default(0)
+  maxRedemptions   Int?
+  redeemedCount    Int          @default(0)
+  expiresAt        DateTime?
+  active           Boolean      @default(true)
+  createdAt        DateTime     @default(now())
 }

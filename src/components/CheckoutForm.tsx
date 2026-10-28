@@ -4,7 +4,7 @@ import ProductImage from "@/components/ProductImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Lock } from "lucide-react";
+import { Check, Loader2, Lock, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { TotalsTable } from "@/components/OrderSummary";
@@ -34,6 +34,10 @@ export default function CheckoutForm({ canceled = false }: { canceled?: boolean 
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [code, setCode] = useState("");
+  const [discount, setDiscount] = useState<{ code: string; discountCents: number; label: string } | null>(null);
+  const [codeError, setCodeError] = useState("");
+  const [applying, setApplying] = useState(false);
 
   // Prefill from the signed-in account while the fields are untouched.
   const values: Form = {
@@ -42,11 +46,36 @@ export default function CheckoutForm({ canceled = false }: { canceled?: boolean 
     email: form.email || user?.email || "",
   };
 
-  const totals = calculateTotals(subtotal);
+  const totals = calculateTotals(subtotal, (discount?.discountCents ?? 0) / 100);
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...values, [k]: e.target.value });
     setErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev));
   };
+
+  async function applyCode() {
+    if (!code.trim()) return;
+    setApplying(true);
+    setCodeError("");
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          items: cart.map(({ product, quantity }) => ({ productId: product.id, quantity })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setCodeError(data.error ?? "Could not check that code.");
+      else {
+        setDiscount(data);
+        setCode("");
+      }
+    } catch {
+      setCodeError("Network error. Please try again.");
+    }
+    setApplying(false);
+  }
 
   function validate() {
     const next: typeof errors = {};
@@ -70,6 +99,7 @@ export default function CheckoutForm({ canceled = false }: { canceled?: boolean 
           // Only ids and quantities are sent. The server looks up real prices.
           items: cart.map(({ product, quantity }) => ({ productId: product.id, quantity })),
           email: values.email,
+          discountCode: discount?.code,
           shipping: {
             fullName: values.fullName, address: values.address, city: values.city,
             region: values.region, postalCode: values.postalCode, country: values.country,
@@ -183,6 +213,32 @@ export default function CheckoutForm({ canceled = false }: { canceled?: boolean 
               </li>
             ))}
           </ul>
+          <div className="mb-6">
+            {discount ? (
+              <p className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm">
+                <span className="flex items-center gap-2"><Check className="size-4" /> <strong>{discount.code}</strong> · {discount.label}</span>
+                <button type="button" onClick={() => setDiscount(null)} aria-label="Remove discount code" className="text-muted hover:text-ink"><X className="size-4" /></button>
+              </p>
+            ) : (
+              <>
+                <label htmlFor="discount" className="label">Discount code</label>
+                <div className="flex gap-2">
+                  <input
+                    id="discount"
+                    className="field uppercase"
+                    value={code}
+                    onChange={(e) => { setCode(e.target.value); setCodeError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCode(); } }}
+                    placeholder="WELCOME10"
+                  />
+                  <button type="button" onClick={applyCode} disabled={applying || !code.trim()} className="btn-ghost !px-5">
+                    {applying ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
+                  </button>
+                </div>
+                {codeError && <p role="alert" className="mt-2 text-xs text-danger">{codeError}</p>}
+              </>
+            )}
+          </div>
           <TotalsTable totals={totals} />
           {serverError && <p role="alert" className="mt-4 text-sm text-danger">{serverError}</p>}
           <button type="submit" disabled={submitting} className="btn-primary mt-6 w-full">

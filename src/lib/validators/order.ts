@@ -18,6 +18,7 @@ export const orderSchema = z.object({
     .min(1, "Your cart is empty")
     .max(50),
   email: z.string().trim().pipe(z.email("Enter a valid email")),
+  discountCode: z.string().trim().max(40).optional(),
   shipping: z.object({
     fullName: text("Full name"),
     address: text("Address", 200),

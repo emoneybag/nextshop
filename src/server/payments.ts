@@ -4,6 +4,8 @@ import type Stripe from "stripe";
 import { prisma } from "@/server/db";
 import { getStripe } from "@/lib/stripe";
 import type { createOrder } from "@/server/orders";
+import { sendEmail } from "@/server/email";
+import { orderConfirmationEmail, type EmailOrder } from "@/server/emails/templates";
 
 type PendingOrder = Awaited<ReturnType<typeof createOrder>>;
 
@@ -39,10 +41,29 @@ export async function createCheckoutSession(order: PendingOrder, baseUrl: string
   extra("Shipping", order.shippingCents);
   extra("Estimated tax", order.taxCents);
 
-  const session = await getStripe().checkout.sessions.create(
+  const stripe = getStripe();
+
+  // Stripe has no negative line items, so a discount is passed as a one-off coupon.
+  let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+  if (order.discountCents > 0) {
+    const coupon = await stripe.coupons.create(
+      {
+        amount_off: order.discountCents,
+        currency: "usd",
+        duration: "once",
+        max_redemptions: 1,
+        name: order.discountCode ?? "Discount",
+      },
+      { idempotencyKey: `coupon_${order.id}` },
+    );
+    discounts = [{ coupon: coupon.id }];
+  }
+
+  const session = await stripe.checkout.sessions.create(
     {
       mode: "payment",
       line_items: lineItems,
+      ...(discounts ? { discounts } : {}),
       customer_email: order.email,
       client_reference_id: order.id,
       metadata: { orderId: order.id, reference: order.reference },
@@ -83,7 +104,26 @@ export async function markOrderPaid(session: Stripe.Checkout.Session): Promise<b
     },
     data: { status: "CONFIRMED", paidAt: new Date(), stripePaymentIntentId: paymentIntent },
   });
-  return result.count === 1;
+  if (result.count !== 1) return false;
+
+  // Runs once per order: only the call that flipped PENDING -> CONFIRMED gets here.
+  await afterOrderPaid(orderId).catch((error) => console.error("Post-payment tasks failed", error));
+  return true;
+}
+
+async function afterOrderPaid(orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!order) return;
+
+  if (order.discountCode) {
+    await prisma.discountCode.updateMany({
+      where: { code: order.discountCode },
+      data: { redeemedCount: { increment: 1 } },
+    });
+  }
+
+  const mail = orderConfirmationEmail(order satisfies EmailOrder);
+  await sendEmail({ to: order.email, ...mail });
 }
 
 /** An expired or failed session can never be paid, so close the order. */

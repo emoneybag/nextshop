@@ -4,6 +4,7 @@ import ProductImage from "./ProductImage";
 import AddToCartButton from "./AddToCartButton";
 import Stars from "./Stars";
 import Price from "./Price";
+import WishlistButton from "./WishlistButton";
 
 const badgeStyle: Record<NonNullable<Product["badge"]>, string> = {
   New: "bg-accent text-accent-ink",
@@ -20,26 +21,29 @@ export default function ProductCard({
 }) {
   return (
     <article className="card group flex flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:border-accent/50">
-      <Link
-        href={`/products/${product.id}`}
-        className="relative block aspect-square overflow-hidden bg-surface-2"
-        aria-label={`View ${product.name}`}
-      >
-        <ProductImage
-          src={product.image}
-          alt={product.name}
-          priority={priority}
-          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="transition duration-500 group-hover:scale-105"
-        />
-        {product.badge && (
-          <span
-            className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeStyle[product.badge]}`}
-          >
-            {product.badge}
-          </span>
-        )}
-      </Link>
+<div className="relative">
+        <Link
+          href={`/products/${product.id}`}
+          className="relative block aspect-square overflow-hidden bg-surface-2"
+          aria-label={`View ${product.name}`}
+        >
+          <ProductImage
+            src={product.image}
+            alt={product.name}
+            priority={priority}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="transition duration-500 group-hover:scale-105"
+          />
+          {product.badge && (
+            <span
+              className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeStyle[product.badge]}`}
+            >
+              {product.badge}
+            </span>
+          )}
+        </Link>
+        <WishlistButton productId={product.id} productName={product.name} className="absolute right-3 top-3" />
+      </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="space-y-1">
